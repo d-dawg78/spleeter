@@ -10,8 +10,8 @@ __license__ = "MIT License"
 from os.path import join
 from tempfile import TemporaryDirectory
 
-import ffmpeg
-import numpy as np
+import ffmpeg  # type: ignore
+import numpy as np  # type: ignore
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
@@ -20,6 +20,7 @@ from pytest import fixture, raises
 from spleeter import SpleeterError
 from spleeter.audio.adapter import AudioAdapter
 from spleeter.audio.ffmpeg import FFMPEGProcessAudioAdapter
+from spleeter.types import AudioDescriptor, Signal
 
 # pylint: enable=import-error
 
@@ -30,26 +31,26 @@ TEST_SAMPLE_RATE = 44100
 
 
 @fixture(scope="session")
-def adapter():
+def adapter() -> AudioAdapter:
     """Target test audio adapter fixture."""
     return AudioAdapter.default()
 
 
 @fixture(scope="session")
-def audio_data(adapter):
+def audio_data(adapter: AudioAdapter) -> Signal:
     """Audio data fixture based on sample loading from adapter."""
     return adapter.load(
         TEST_AUDIO_DESCRIPTOR, TEST_OFFSET, TEST_DURATION, TEST_SAMPLE_RATE
     )
 
 
-def test_default_adapter(adapter):
+def test_default_adapter(adapter: AudioAdapter) -> None:
     """Test adapter as default adapter."""
     assert isinstance(adapter, FFMPEGProcessAudioAdapter)
     assert adapter is AudioAdapter._DEFAULT
 
 
-def test_load(audio_data):
+def test_load(audio_data: Signal) -> None:
     """Test audio loading."""
     waveform, sample_rate = audio_data
     assert sample_rate == TEST_SAMPLE_RATE
@@ -60,13 +61,13 @@ def test_load(audio_data):
     assert waveform.shape[1] == 2
 
 
-def test_load_error(adapter):
+def test_load_error(adapter: AudioAdapter) -> None:
     """Test load ffprobe exception"""
     with raises(SpleeterError):
         adapter.load("Paris City Jazz", TEST_OFFSET, TEST_DURATION, TEST_SAMPLE_RATE)
 
 
-def test_save(adapter, audio_data):
+def test_save(adapter: AudioAdapter, audio_data: Signal) -> None:
     """Test audio saving."""
     with TemporaryDirectory() as directory:
         path = join(directory, "ffmpeg-save.mp3")

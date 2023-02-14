@@ -8,7 +8,7 @@ from pytest import raises
 from spleeter.model.provider import ModelProvider
 
 
-def test_checksum():
+def test_checksum() -> None:
     """Test archive checksum index retrieval."""
     provider = ModelProvider.default()
     assert (

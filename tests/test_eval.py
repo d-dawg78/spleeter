@@ -11,7 +11,8 @@ from os import makedirs
 from os.path import join
 from tempfile import TemporaryDirectory
 
-import numpy as np
+import numpy as np  # type: ignore
+from typer import Option
 
 from spleeter.__main__ import evaluate
 from spleeter.audio.adapter import AudioAdapter
@@ -24,7 +25,7 @@ res_4stems = {
 }
 
 
-def generate_fake_eval_dataset(path):
+def generate_fake_eval_dataset(path: str) -> None:
     """
     generate fake evaluation dataset
     """
@@ -43,17 +44,17 @@ def generate_fake_eval_dataset(path):
             aa.save(filename, data, fs)
 
 
-def test_evaluate():
+def test_evaluate() -> None:
     with TemporaryDirectory() as dataset:
         with TemporaryDirectory() as evaluation:
             generate_fake_eval_dataset(dataset)
             metrics = evaluate(
-                adapter="spleeter.audio.ffmpeg.FFMPEGProcessAudioAdapter",
-                output_path=evaluation,
-                params_filename="spleeter:4stems",
-                mus_dir=dataset,
-                mwf=False,
-                verbose=False,
+                adapter=Option("spleeter.audio.ffmpeg.FFMPEGProcessAudioAdapter"),
+                output_path=Option(evaluation),
+                params_filename=Option("spleeter:4stems"),
+                mus_dir=Option(dataset),
+                mwf=Option(False),
+                verbose=Option(False),
             )
             for instrument, metric in metrics.items():
                 for m, value in metric.items():

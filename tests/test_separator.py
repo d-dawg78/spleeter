@@ -11,9 +11,9 @@ import itertools
 from os.path import basename, exists, join, splitext
 from tempfile import TemporaryDirectory
 
-import numpy as np
+import numpy as np  # type: ignore
 import pytest
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 from spleeter import SpleeterError
 from spleeter.audio.adapter import AudioAdapter
@@ -37,7 +37,7 @@ print("RUNNING TESTS WITH TF VERSION {}".format(tf.__version__))
 
 
 @pytest.mark.parametrize("test_file, configuration", TEST_CONFIGURATIONS)
-def test_separate(test_file, configuration):
+def test_separate(test_file: str, configuration: str) -> None:
     """Test separation from raw data."""
     instruments = MODEL_TO_INST[configuration]
     adapter = AudioAdapter.default()
@@ -57,7 +57,7 @@ def test_separate(test_file, configuration):
 
 
 @pytest.mark.parametrize("test_file, configuration", TEST_CONFIGURATIONS)
-def test_separate_to_file(test_file, configuration):
+def test_separate_to_file(test_file: str, configuration: str) -> None:
     """Test file based separation."""
     instruments = MODEL_TO_INST[configuration]
     separator = Separator(configuration, multiprocess=False)
@@ -69,7 +69,7 @@ def test_separate_to_file(test_file, configuration):
 
 
 @pytest.mark.parametrize("test_file, configuration", TEST_CONFIGURATIONS)
-def test_filename_format(test_file, configuration):
+def test_filename_format(test_file: str, configuration: str) -> None:
     """Test custom filename format."""
     instruments = MODEL_TO_INST[configuration]
     separator = Separator(configuration, multiprocess=False)
@@ -85,7 +85,7 @@ def test_filename_format(test_file, configuration):
 
 
 @pytest.mark.parametrize("test_file, configuration", MODELS_AND_TEST_FILES)
-def test_filename_conflict(test_file, configuration):
+def test_filename_conflict(test_file: str, configuration: str) -> None:
     """Test error handling with static pattern."""
     separator = Separator(configuration, multiprocess=False)
     with TemporaryDirectory() as directory:

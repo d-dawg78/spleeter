@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 from spleeter.__main__ import spleeter
 
 
-def test_version():
+def test_version() -> None:
 
     runner = CliRunner()
 

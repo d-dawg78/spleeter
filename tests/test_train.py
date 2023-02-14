@@ -12,9 +12,10 @@ import os
 from os import makedirs
 from os.path import join
 from tempfile import TemporaryDirectory
+from typing import Any, List, Union
 
-import numpy as np
-import pandas as pd
+import numpy as np  # type: ignore
+import pandas as pd  # type: ignore
 from typer.testing import CliRunner
 
 from spleeter.__main__ import spleeter
@@ -48,13 +49,13 @@ TRAIN_CONFIG = {
 
 
 def generate_fake_training_dataset(
-    path,
-    instrument_list=["vocals", "other"],
-    n_channels=2,
-    n_songs=2,
-    fs=44100,
-    duration=6,
-):
+    path: str,
+    instrument_list: List[str] = ["vocals", "other"],
+    n_channels: int = 2,
+    n_songs: int = 2,
+    fs: Union[int, Any] = 44100,
+    duration: int = 6,
+) -> pd.DataFrame:
     """
     generates a fake training dataset in path:
     - generates audio files
@@ -81,7 +82,7 @@ def generate_fake_training_dataset(
     dataset_df.to_csv(join(path, "train", "train.csv"), index=False)
 
 
-def test_train():
+def test_train() -> None:
 
     with TemporaryDirectory() as path:
         # generate training dataset
