@@ -5,11 +5,11 @@
 
 from typing import Any, Callable, Dict
 
-import pandas as pd
+import pandas as pd  # type: ignore
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 # pylint: enable=import-error
 
@@ -19,7 +19,7 @@ __license__ = "MIT License"
 
 
 def sync_apply(
-    tensor_dict: tf.Tensor, func: Callable, concat_axis: int = 1
+    tensor_dict: tf.Tensor, func: Callable[[tf.Tensor], tf.Tensor], concat_axis: int = 1
 ) -> Dict[str, tf.Tensor]:
     """
     Return a function that applies synchronously the provided func on the
@@ -147,7 +147,7 @@ def pad_and_partition(tensor: tf.Tensor, segment_len: int) -> tf.Tensor:
     )
 
 
-def pad_and_reshape(instr_spec, frame_length, F) -> Any:
+def pad_and_reshape(instr_spec: tf.Tensor, frame_length: int, F: int) -> Any:
     """
     Parameters:
         instr_spec:
@@ -168,7 +168,7 @@ def pad_and_reshape(instr_spec, frame_length, F) -> Any:
     return processed_instr_spec
 
 
-def dataset_from_csv(csv_path: str, **kwargs) -> Any:
+def dataset_from_csv(csv_path: str, **kwargs: str) -> Any:
     """
     Load dataset from a CSV file using Pandas. kwargs if any are
     forwarded to the `pandas.read_csv` function.
@@ -186,7 +186,7 @@ def dataset_from_csv(csv_path: str, **kwargs) -> Any:
     return dataset
 
 
-def check_tensor_shape(tensor_tf: tf.Tensor, target_shape: Any) -> bool:
+def check_tensor_shape(tensor_tf: tf.Tensor, target_shape: Any) -> tf.Tensor:
     """
     Return a Tensorflow boolean graph that indicates whether
     sample[features_key] has the specified target shape. Only check

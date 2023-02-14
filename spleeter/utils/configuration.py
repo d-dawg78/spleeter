@@ -6,7 +6,7 @@
 import importlib.resources as loader
 import json
 from os.path import exists
-from typing import Dict
+from typing import Any, Dict
 
 from .. import SpleeterError, resources
 
@@ -17,7 +17,7 @@ __license__ = "MIT License"
 _EMBEDDED_CONFIGURATION_PREFIX: str = "spleeter:"
 
 
-def load_configuration(descriptor: str) -> Dict:
+def load_configuration(descriptor: str) -> Any:
     """
     Load configuration from the given descriptor. Could be either a
     `spleeter:` prefixed embedded configuration name or a file system path

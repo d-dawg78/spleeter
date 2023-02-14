@@ -21,7 +21,7 @@ import os
 import tarfile
 from os import environ
 from tempfile import NamedTemporaryFile
-from typing import Dict
+from typing import Any, Dict
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
@@ -37,7 +37,7 @@ __author__ = "Deezer Research"
 __license__ = "MIT License"
 
 
-def compute_file_checksum(path):
+def compute_file_checksum(path: str) -> str:
     """Computes given path file sha256.
 
     :param path: Path of the file to compute checksum for.
@@ -76,7 +76,7 @@ class GithubModelProvider(ModelProvider):
         self._release: str = release
 
     @classmethod
-    def from_environ(cls: type) -> "GithubModelProvider":
+    def from_environ(cls) -> "GithubModelProvider":
         """
         Factory method that creates provider from envvars.
 
@@ -116,7 +116,7 @@ class GithubModelProvider(ModelProvider):
         )
         response: httpx.Response = httpx.get(url)
         response.raise_for_status()
-        index: Dict = response.json()
+        index: Dict[str, str] = response.json()
         if name not in index:
             raise ValueError(f"No checksum for model {name}")
         return index[name]

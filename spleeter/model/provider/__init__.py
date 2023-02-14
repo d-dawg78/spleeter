@@ -21,6 +21,8 @@ __email__ = "spleeter@deezer.com"
 __author__ = "Deezer Research"
 __license__ = "MIT License"
 
+from .github import GithubModelProvider
+
 
 class ModelProvider(ABC):
     """
@@ -82,7 +84,7 @@ class ModelProvider(ABC):
         return model_directory
 
     @classmethod
-    def default(_: type) -> "ModelProvider":
+    def default(_: type) -> GithubModelProvider:
         """
         Builds and returns a default model provider.
 
@@ -90,6 +92,4 @@ class ModelProvider(ABC):
             ModelProvider:
                 A default model provider instance to use.
         """
-        from .github import GithubModelProvider
-
         return GithubModelProvider.from_environ()

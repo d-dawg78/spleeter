@@ -116,7 +116,7 @@ TrainingDataDirectoryOption: OptionInfo = Option(
 VerboseOption: OptionInfo = Option(False, "--verbose", help="Enable verbose logs")
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
         from importlib.metadata import version
 

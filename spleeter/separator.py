@@ -18,12 +18,12 @@ import atexit
 import os
 from multiprocessing import Pool
 from os.path import basename, dirname, join, splitext
-from typing import Dict, Generator, Optional
+from typing import Any, Dict, Generator, Iterator, List, Optional
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import numpy as np
-import tensorflow as tf
+import numpy as np  # type: ignore
+import tensorflow as tf  # type: ignore
 
 from spleeter.model.provider import ModelProvider
 
@@ -31,7 +31,12 @@ from . import SpleeterError
 from .audio import Codec
 from .audio.adapter import AudioAdapter
 from .audio.convertor import to_stereo
-from .model import EstimatorSpecBuilder, InputProviderFactory, model_fn
+from .model import (
+    EstimatorSpecBuilder,
+    InputProviderFactory,
+    WaveformInputProvider,
+    model_fn,
+)
 from .model.provider import ModelProvider
 from .types import AudioDescriptor
 from .utils.configuration import load_configuration
@@ -52,13 +57,13 @@ class DataGenerator(object):
 
     def __init__(self) -> None:
         """Default constructor."""
-        self._current_data = None
+        self._current_data: Optional[Dict[str, np.ndarray]] = None
 
-    def update_data(self, data) -> None:
+    def update_data(self, data: Dict[str, np.ndarray]) -> None:
         """Replace internal data."""
         self._current_data = data
 
-    def __call__(self) -> Generator:
+    def __call__(self) -> Generator[Optional[Dict[str, np.ndarray]], None, None]:
         """Generation process."""
         buffer = self._current_data
         while buffer:
@@ -66,7 +71,7 @@ class DataGenerator(object):
             buffer = self._current_data
 
 
-def create_estimator(params, MWF):
+def create_estimator(params: Dict[str, Any], MWF: bool) -> tf.Tensor:
     """
     Initialize tensorflow estimator that will perform separation
 
@@ -113,20 +118,20 @@ class Separator(object):
         self._sample_rate = self._params["sample_rate"]
         self._MWF = MWF
         self._tf_graph = tf.Graph()
-        self._prediction_generator = None
-        self._input_provider = None
-        self._builder = None
-        self._features = None
+        self._prediction_generator: Optional[Iterator[tf.Tensor]] = None
+        self._input_provider: Optional[WaveformInputProvider] = None
+        self._builder: Optional[EstimatorSpecBuilder] = None
+        self._features: Optional[Dict[str, Any]] = None
         self._session = None
         if multiprocess:
-            self._pool = Pool()
+            self._pool: Optional[Any] = Pool()
             atexit.register(self._pool.close)
         else:
             self._pool = None
-        self._tasks = []
+        self._tasks: List[Any] = []
         self._data_generator = DataGenerator()
 
-    def _get_prediction_generator(self) -> Generator:
+    def _get_prediction_generator(self) -> Iterator[tf.Tensor]:
         """
         Lazy loading access method for internal prediction generator
         returned by the predict method of a tensorflow estimator.
@@ -138,7 +143,7 @@ class Separator(object):
         if self._prediction_generator is None:
             estimator = create_estimator(self._params, self._MWF)
 
-            def get_dataset():
+            def get_dataset() -> tf.Tensor:
                 return tf.data.Dataset.from_generator(
                     self._data_generator,
                     output_types={"waveform": tf.float32, "audio_id": tf.string},
@@ -163,23 +168,23 @@ class Separator(object):
             task.get()
             task.wait(timeout=timeout)
 
-    def _get_input_provider(self):
+    def _get_input_provider(self) -> WaveformInputProvider:
         if self._input_provider is None:
             self._input_provider = InputProviderFactory.get(self._params)
         return self._input_provider
 
-    def _get_features(self):
+    def _get_features(self) -> Dict[str, Any]:
         if self._features is None:
             provider = self._get_input_provider()
             self._features = provider.get_input_dict_placeholders()
         return self._features
 
-    def _get_builder(self):
+    def _get_builder(self) -> EstimatorSpecBuilder:
         if self._builder is None:
             self._builder = EstimatorSpecBuilder(self._get_features(), self._params)
         return self._builder
 
-    def _get_session(self):
+    def _get_session(self) -> tf.Tensor:
         if self._session is None:
             saver = tf.compat.v1.train.Saver()
             provider = ModelProvider.default()
@@ -191,7 +196,7 @@ class Separator(object):
 
     def _separate_tensorflow(
         self, waveform: np.ndarray, audio_descriptor: AudioDescriptor
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """
         Performs source separation over the given waveform with tensorflow
         backend.
@@ -212,13 +217,13 @@ class Separator(object):
             {"waveform": waveform, "audio_id": np.array(audio_descriptor)}
         )
         # NOTE: perform separation.
-        prediction = next(prediction_generator)
+        prediction: Dict[str, Any] = next(prediction_generator)
         prediction.pop("audio_id")
         return prediction
 
     def separate(
         self, waveform: np.ndarray, audio_descriptor: Optional[str] = ""
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """
         Performs separation on a waveform.
 
@@ -298,7 +303,7 @@ class Separator(object):
 
     def save_to_file(
         self,
-        sources: Dict,
+        sources: Dict[str, Any],
         audio_descriptor: AudioDescriptor,
         destination: str,
         filename_format: str = "{filename}/{instrument}.{codec}",

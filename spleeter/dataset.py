@@ -18,11 +18,11 @@ import os
 import time
 from os.path import exists
 from os.path import sep as SEPARATOR
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 from .audio.adapter import AudioAdapter
 from .audio.convertor import db_uint_spectrogram_to_gain, spectrogram_to_db_uint
@@ -46,7 +46,7 @@ __author__ = "Deezer Research"
 __license__ = "MIT License"
 
 # Default audio parameters to use.
-DEFAULT_AUDIO_PARAMS: Dict = {
+DEFAULT_AUDIO_PARAMS: Dict[str, Any] = {
     "instrument_list": ("vocals", "accompaniment"),
     "mix_name": "mix",
     "sample_rate": 44100,
@@ -58,7 +58,7 @@ DEFAULT_AUDIO_PARAMS: Dict = {
 
 
 def get_training_dataset(
-    audio_params: Dict, audio_adapter: AudioAdapter, audio_path: str
+    audio_params: Dict[str, Any], audio_adapter: AudioAdapter, audio_path: str
 ) -> Any:
     """
     Builds training dataset.
@@ -82,11 +82,17 @@ def get_training_dataset(
         chunk_duration=audio_params.get("chunk_duration", 20.0),
         random_seed=audio_params.get("random_seed", 0),
     )
+
+    train_csv: str = str(audio_params.get("train_csv"))
+    cache_directory: Optional[str] = audio_params.get("training_cache")
+    bs: int = audio_params.get("batch_size", 8)
+    chunks_per_song: int = audio_params.get("n_chunks_per_song", 2)
+
     return builder.build(
-        audio_params.get("train_csv"),
-        cache_directory=audio_params.get("training_cache"),
-        batch_size=audio_params.get("batch_size"),
-        n_chunks_per_song=audio_params.get("n_chunks_per_song", 2),
+        csv_path=train_csv,
+        cache_directory=cache_directory,
+        batch_size=bs,
+        n_chunks_per_song=chunks_per_song,
         random_data_augmentation=False,
         convert_to_uint=True,
         wait_for_cache=False,
@@ -94,7 +100,7 @@ def get_training_dataset(
 
 
 def get_validation_dataset(
-    audio_params: Dict, audio_adapter: AudioAdapter, audio_path: str
+    audio_params: Dict[str, Any], audio_adapter: AudioAdapter, audio_path: str
 ) -> Any:
     """
     Builds validation dataset.
@@ -114,10 +120,15 @@ def get_validation_dataset(
     builder = DatasetBuilder(
         audio_params, audio_adapter, audio_path, chunk_duration=12.0
     )
+
+    val_csv: str = str(audio_params.get("validation_csv"))
+    cache_directory: Optional[str] = audio_params.get("validation_cache")
+    bs: int = audio_params.get("batch_size", 8)
+
     return builder.build(
-        audio_params.get("validation_csv"),
-        batch_size=audio_params.get("batch_size"),
-        cache_directory=audio_params.get("validation_cache"),
+        csv_path=val_csv,
+        batch_size=bs,
+        cache_directory=cache_directory,
         convert_to_uint=True,
         infinite_generator=False,
         n_chunks_per_song=1,
@@ -131,7 +142,7 @@ def get_validation_dataset(
 class InstrumentDatasetBuilder(object):
     """Instrument based filter and mapper provider."""
 
-    def __init__(self, parent, instrument) -> None:
+    def __init__(self, parent: DatasetBuilder, instrument: str) -> None:
         """
         Default constructor.
 
@@ -147,7 +158,7 @@ class InstrumentDatasetBuilder(object):
         self._min_spectrogram_key = f"min_{instrument}_spectrogram"
         self._max_spectrogram_key = f"max_{instrument}_spectrogram"
 
-    def load_waveform(self, sample):
+    def load_waveform(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """Load waveform for given sample."""
         return dict(
             sample,
@@ -160,7 +171,7 @@ class InstrumentDatasetBuilder(object):
             ),
         )
 
-    def compute_spectrogram(self, sample):
+    def compute_spectrogram(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """Compute spectrogram of the given sample."""
         return dict(
             sample,
@@ -175,7 +186,7 @@ class InstrumentDatasetBuilder(object):
             },
         )
 
-    def filter_frequencies(self, sample):
+    def filter_frequencies(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """ """
         return dict(
             sample,
@@ -186,7 +197,7 @@ class InstrumentDatasetBuilder(object):
             },
         )
 
-    def convert_to_uint(self, sample):
+    def convert_to_uint(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """Convert given sample from float to unit."""
         return dict(
             sample,
@@ -198,11 +209,11 @@ class InstrumentDatasetBuilder(object):
             ),
         )
 
-    def filter_infinity(self, sample):
+    def filter_infinity(self, sample: Dict[str, Any]) -> tf.Tensor:
         """Filter infinity sample."""
         return tf.logical_not(tf.math.is_inf(sample[self._min_spectrogram_key]))
 
-    def convert_to_float32(self, sample):
+    def convert_to_float32(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """Convert given sample from unit to float."""
         return dict(
             sample,
@@ -215,10 +226,10 @@ class InstrumentDatasetBuilder(object):
             },
         )
 
-    def time_crop(self, sample):
+    def time_crop(self, sample: Dict[str, Any]) -> Dict[Any, Any]:
         """ """
 
-        def start(sample):
+        def start(sample: Dict[str, Any]) -> tf.Tensor:
             """mid_segment_start"""
             return tf.cast(
                 tf.maximum(
@@ -238,14 +249,14 @@ class InstrumentDatasetBuilder(object):
             },
         )
 
-    def filter_shape(self, sample):
+    def filter_shape(self, sample: Dict[str, Any]) -> tf.Tensor:
         """Filter badly shaped sample."""
         return check_tensor_shape(
             sample[self._spectrogram_key],
             (self._parent._T, self._parent._F, self._parent._n_channels),
         )
 
-    def reshape_spectrogram(self, sample):
+    def reshape_spectrogram(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Reshape given sample."""
         return dict(
             sample,
@@ -259,10 +270,6 @@ class InstrumentDatasetBuilder(object):
 
 
 class DatasetBuilder(object):
-    """
-    TO BE DOCUMENTED.
-    """
-
     MARGIN: float = 0.5
     """ Margin at beginning and end of songs in seconds. """
 
@@ -271,7 +278,7 @@ class DatasetBuilder(object):
 
     def __init__(
         self,
-        audio_params: Dict,
+        audio_params: Dict[str, Any],
         audio_adapter: AudioAdapter,
         audio_path: str,
         random_seed: int = 0,
@@ -279,8 +286,6 @@ class DatasetBuilder(object):
     ) -> None:
         """
         Default constructor.
-
-        NOTE: Probably need for AudioAdapter.
 
         Parameters:
             audio_params (Dict):
@@ -303,7 +308,7 @@ class DatasetBuilder(object):
         self._mix_name = audio_params["mix_name"]
         self._n_channels = audio_params["n_channels"]
         self._instruments = [self._mix_name] + audio_params["instrument_list"]
-        self._instrument_builders = None
+        self._instrument_builders: Optional[List[InstrumentDatasetBuilder]] = None
         self._chunk_duration = chunk_duration
         self._audio_adapter = audio_adapter
         self._audio_params = audio_params
@@ -312,7 +317,7 @@ class DatasetBuilder(object):
 
         self.check_parameters_compatibility()
 
-    def check_parameters_compatibility(self):
+    def check_parameters_compatibility(self) -> None:
         if self._frame_length / 2 + 1 < self._F:
             raise ValueError(
                 "F is too large and must be set to at most frame_length/2+1. Decrease F or increase frame_length to fix."
@@ -325,7 +330,7 @@ class DatasetBuilder(object):
                 "T is too large considering STFT parameters and chunk duratoin. Make sure spectrogram time dimension of chunks is larger than T (for instance reducing T or frame_step or increasing chunk duration)."
             )
 
-    def expand_path(self, sample):
+    def expand_path(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Expands audio paths for the given sample."""
         return dict(
             sample,
@@ -337,18 +342,18 @@ class DatasetBuilder(object):
             },
         )
 
-    def filter_error(self, sample):
+    def filter_error(self, sample: Dict[str, Any]) -> tf.Tensor:
         """Filter errored sample."""
         return tf.logical_not(sample["waveform_error"])
 
-    def filter_waveform(self, sample):
+    def filter_waveform(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Filter waveform from sample."""
         return {k: v for k, v in sample.items() if not k == "waveform"}
 
-    def harmonize_spectrogram(self, sample):
+    def harmonize_spectrogram(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Ensure same size for vocals and mix spectrograms."""
 
-        def _reduce(sample):
+        def _reduce(sample: Dict[str, Any]) -> tf.Tensor:
             return tf.reduce_min(
                 [
                     tf.shape(sample[f"{instrument}_spectrogram"])[0]
@@ -366,7 +371,7 @@ class DatasetBuilder(object):
             },
         )
 
-    def filter_short_segments(self, sample):
+    def filter_short_segments(self, sample: Dict[str, Any]) -> tf.Tensor:
         """Filter out too short segment."""
         return tf.reduce_any(
             [
@@ -375,7 +380,7 @@ class DatasetBuilder(object):
             ]
         )
 
-    def random_time_crop(self, sample):
+    def random_time_crop(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Random time crop of 11.88s."""
         return dict(
             sample,
@@ -392,7 +397,7 @@ class DatasetBuilder(object):
             ),
         )
 
-    def random_time_stretch(self, sample):
+    def random_time_stretch(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Randomly time stretch the given sample."""
         return dict(
             sample,
@@ -405,7 +410,7 @@ class DatasetBuilder(object):
             ),
         )
 
-    def random_pitch_shift(self, sample):
+    def random_pitch_shift(self, sample: Dict[str, Any]) -> Dict[str, Any]:
         """Randomly pitch shift the given sample."""
         return dict(
             sample,
@@ -419,7 +424,9 @@ class DatasetBuilder(object):
             ),
         )
 
-    def map_features(self, sample):
+    def map_features(
+        self, sample: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Select features and annotation of the given sample."""
         input_ = {
             f"{self._mix_name}_spectrogram": sample[f"{self._mix_name}_spectrogram"]
@@ -501,7 +508,7 @@ class DatasetBuilder(object):
         for builder in self._instrument_builders:
             yield builder
 
-    def cache(self, dataset: Any, cache: str, wait: bool) -> Any:
+    def cache(self, dataset: Any, cache: Optional[str], wait: bool) -> Any:
         """
         Cache the given dataset if cache is enabled. Eventually waits for
         cache to be available (useful if another process is already
@@ -541,11 +548,8 @@ class DatasetBuilder(object):
         cache_directory: Optional[str] = None,
         wait_for_cache: bool = False,
         num_parallel_calls: int = 4,
-        n_chunks_per_song: float = 2,
+        n_chunks_per_song: int = 2,
     ) -> Any:
-        """
-        TO BE DOCUMENTED.
-        """
         dataset = dataset_from_csv(csv_path)
         dataset = self.compute_segments(dataset, n_chunks_per_song)
         # Shuffle data

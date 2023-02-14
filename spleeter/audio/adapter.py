@@ -6,12 +6,12 @@
 from abc import ABC, abstractmethod
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import numpy as np
-import tensorflow as tf
+import numpy as np  # type: ignore
+import tensorflow as tf  # type: ignore
 
 from spleeter.audio import Codec
 
@@ -30,7 +30,7 @@ __license__ = "MIT License"
 class AudioAdapter(ABC):
     """An abstract class for manipulating audio signal."""
 
-    _DEFAULT: "AudioAdapter" = None
+    _DEFAULT: Optional["AudioAdapter"] = None
     """ Default audio adapter singleton instance. """
 
     @abstractmethod
@@ -67,7 +67,7 @@ class AudioAdapter(ABC):
 
     def load_tf_waveform(
         self,
-        audio_descriptor,
+        audio_descriptor: AudioDescriptor,
         offset: float = 0.0,
         duration: float = 1800.0,
         sample_rate: int = 44100,
@@ -104,7 +104,13 @@ class AudioAdapter(ABC):
         duration = tf.cast(duration, tf.float64)
 
         # Defined safe loading function.
-        def safe_load(path, offset, duration, sample_rate, dtype):
+        def safe_load(
+            path: AudioDescriptor,
+            offset: tf.Tensor,
+            duration: tf.Tensor,
+            sample_rate: tf.Tensor,
+            dtype: tf.Tensor,
+        ) -> Tuple[Signal, bool]:
             logger.info(f"Loading audio {path} from {offset} to {offset + duration}")
             try:
                 (data, _) = self.load(
@@ -137,8 +143,8 @@ class AudioAdapter(ABC):
         path: Union[Path, str],
         data: np.ndarray,
         sample_rate: float,
-        codec: Codec = None,
-        bitrate: str = None,
+        codec: Optional[Codec] = None,
+        bitrate: Optional[str] = None,
     ) -> None:
         """
         Save the given audio data to the file denoted by the given path.
@@ -159,7 +165,7 @@ class AudioAdapter(ABC):
         pass
 
     @classmethod
-    def default(cls: type) -> "AudioAdapter":
+    def default(cls) -> "AudioAdapter":
         """
         Builds and returns a default audio adapter instance.
 
@@ -174,7 +180,7 @@ class AudioAdapter(ABC):
         return cls._DEFAULT
 
     @classmethod
-    def get(cls: type, descriptor: str) -> "AudioAdapter":
+    def get(cls, descriptor: str) -> Any:
         """
         Load dynamically an AudioAdapter from given class descriptor.
 
@@ -188,9 +194,9 @@ class AudioAdapter(ABC):
         """
         if not descriptor:
             return cls.default()
-        module_path: List[str] = descriptor.split(".")
-        adapter_class_name: str = module_path[-1]
-        module_path: str = ".".join(module_path[:-1])
+        module: List[str] = descriptor.split(".")
+        adapter_class_name: str = module[-1]
+        module_path: str = ".".join(module[:-1])
         adapter_module = import_module(module_path)
         adapter_class = getattr(adapter_module, adapter_class_name)
         if not issubclass(adapter_class, AudioAdapter):

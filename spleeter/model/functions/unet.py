@@ -18,10 +18,10 @@ from typing import Any, Dict, Iterable, Optional
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import tensorflow as tf
-from tensorflow.compat.v1 import logging
-from tensorflow.compat.v1.keras.initializers import he_uniform
-from tensorflow.keras.layers import (
+import tensorflow as tf  # type: ignore
+from tensorflow.compat.v1 import logging  # type: ignore
+from tensorflow.compat.v1.keras.initializers import he_uniform  # type: ignore
+from tensorflow.keras.layers import (  # type: ignore
     ELU,
     BatchNormalization,
     Concatenate,
@@ -43,7 +43,7 @@ __author__ = "Deezer Research"
 __license__ = "MIT License"
 
 
-def _get_conv_activation_layer(params: Dict) -> Any:
+def _get_conv_activation_layer(params: Dict[str, Any]) -> tf.Tensor:
     """
     > To be documented.
 
@@ -54,7 +54,7 @@ def _get_conv_activation_layer(params: Dict) -> Any:
         Any:
             Required Activation function.
     """
-    conv_activation: str = params.get("conv_activation")
+    conv_activation: Optional[str] = params.get("conv_activation")
     if conv_activation == "ReLU":
         return ReLU()
     elif conv_activation == "ELU":
@@ -62,7 +62,7 @@ def _get_conv_activation_layer(params: Dict) -> Any:
     return LeakyReLU(0.2)
 
 
-def _get_deconv_activation_layer(params: Dict) -> Any:
+def _get_deconv_activation_layer(params: Dict[str, Any]) -> tf.Tensor:
     """
     > To be documented.
 
@@ -73,7 +73,7 @@ def _get_deconv_activation_layer(params: Dict) -> Any:
         Any:
             Required Activation function.
     """
-    deconv_activation: str = params.get("deconv_activation")
+    deconv_activation: Optional[str] = params.get("deconv_activation")
     if deconv_activation == "LeakyReLU":
         return LeakyReLU(0.2)
     elif deconv_activation == "ELU":
@@ -84,9 +84,9 @@ def _get_deconv_activation_layer(params: Dict) -> Any:
 def apply_unet(
     input_tensor: tf.Tensor,
     output_name: str = "output",
-    params: Optional[Dict] = None,
+    params: Dict[str, Any] = {},
     output_mask_logit: bool = False,
-) -> Any:
+) -> tf.Tensor:
     """
     Apply a convolutionnal U-net to model a single instrument (one U-net
     is used for each instrument).
@@ -191,15 +191,15 @@ def apply_unet(
 
 
 def unet(
-    input_tensor: tf.Tensor, instruments: Iterable[str], params: Optional[Dict] = None
-) -> Dict:
+    input_tensor: tf.Tensor, instruments: Iterable[str], params: Dict[str, Any] = {}
+) -> tf.Tensor:
     """Model function applier."""
     return apply(apply_unet, input_tensor, instruments, params)
 
 
 def softmax_unet(
-    input_tensor: tf.Tensor, instruments: Iterable[str], params: Optional[Dict] = None
-) -> Dict:
+    input_tensor: tf.Tensor, instruments: Iterable[str], params: Dict[str, Any] = {}
+) -> Dict[str, tf.Tensor]:
     """
     Apply softmax to multitrack unet in order to have mask suming to one.
 

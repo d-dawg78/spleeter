@@ -7,9 +7,9 @@ from typing import Any, Tuple
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import numpy as np
+import numpy as np  # type: ignore
 
 # pylint: enable=import-error
 
-AudioDescriptor: type = Any
-Signal: type = Tuple[np.ndarray, float]
+AudioDescriptor = Any
+Signal = Tuple[np.ndarray, float]

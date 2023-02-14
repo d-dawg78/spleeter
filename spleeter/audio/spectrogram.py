@@ -5,9 +5,8 @@
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import numpy as np
-import tensorflow as tf
-from tensorflow.signal import hann_window, stft
+import tensorflow as tf  # type: ignore
+from tensorflow.signal import hann_window, stft  # type: ignore
 
 # pylint: enable=import-error
 
@@ -92,7 +91,10 @@ def time_stretch(
 
 
 def random_time_stretch(
-    spectrogram: tf.Tensor, factor_min: float = 0.9, factor_max: float = 1.1, **kwargs
+    spectrogram: tf.Tensor,
+    factor_min: float = 0.9,
+    factor_max: float = 1.1,
+    **kwargs: tf.image.ResizeMethod
 ) -> tf.Tensor:
     """
     Time stretch a spectrogram preserving shape with random ratio in
@@ -150,7 +152,10 @@ def pitch_shift(
 
 
 def random_pitch_shift(
-    spectrogram: tf.Tensor, shift_min: float = -1.0, shift_max: float = 1.0, **kwargs
+    spectrogram: tf.Tensor,
+    shift_min: float = -1.0,
+    shift_max: float = 1.0,
+    **kwargs: tf.image.ResizeMethod
 ) -> tf.Tensor:
     """
     Pitch shift a spectrogram preserving shape with random ratio in

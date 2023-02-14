@@ -3,11 +3,11 @@
 
 """ This package provide model functions. """
 
-from typing import Callable, Dict, Iterable, Optional
+from typing import Any, Callable, Dict, Iterable, Optional
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import tensorflow as tf
+import tensorflow as tf  # type: ignore
 
 # pylint: enable=import-error
 
@@ -17,11 +17,11 @@ __license__ = "MIT License"
 
 
 def apply(
-    function: Callable,
+    function: Callable[[tf.Tensor, str, Dict[str, Any]], Dict[str, tf.Tensor]],
     input_tensor: tf.Tensor,
     instruments: Iterable[str],
-    params: Optional[Dict] = None,
-) -> Dict:
+    params: Optional[Dict[str, Any]] = None,
+) -> Dict[str, tf.Tensor]:
     """
     Apply given function to the input tensor.
 
@@ -38,10 +38,8 @@ def apply(
     Returns:
         Created output tensor dict.
     """
-    output_dict: Dict = {}
+    output_dict: Dict[str, tf.Tensor] = {}
     for instrument in instruments:
         out_name = f"{instrument}_spectrogram"
-        output_dict[out_name] = function(
-            input_tensor, output_name=out_name, params=params or {}
-        )
+        output_dict[out_name] = function(input_tensor, out_name, params or {})
     return output_dict

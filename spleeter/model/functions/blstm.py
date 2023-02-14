@@ -20,14 +20,14 @@
     selection (LSTM layer dropout rate, regularization strength).
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import tensorflow as tf
-from tensorflow.compat.v1.keras.initializers import he_uniform
-from tensorflow.compat.v1.keras.layers import CuDNNLSTM
-from tensorflow.keras.layers import (
+import tensorflow as tf  # type: ignore
+from tensorflow.compat.v1.keras.initializers import he_uniform  # type: ignore
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM  # type: ignore
+from tensorflow.keras.layers import (  # type: ignore
     Bidirectional,
     Dense,
     Flatten,
@@ -45,7 +45,7 @@ __license__ = "MIT License"
 
 
 def apply_blstm(
-    input_tensor: tf.Tensor, output_name: str = "output", params: Optional[Dict] = None
+    input_tensor: tf.Tensor, output_name: str = "output", params: Dict[str, Any] = {}
 ) -> tf.Tensor:
     """
     Apply BLSTM to the given input_tensor.
@@ -62,13 +62,11 @@ def apply_blstm(
         tensorflow.Tensor:
             Output tensor.
     """
-    if params is None:
-        params = {}
     units: int = params.get("lstm_units", 250)
     kernel_initializer = he_uniform(seed=50)
     flatten_input = TimeDistributed(Flatten())((input_tensor))
 
-    def create_bidirectional():
+    def create_bidirectional() -> tf.Tensor:
         return Bidirectional(
             CuDNNLSTM(
                 units, kernel_initializer=kernel_initializer, return_sequences=True
@@ -92,7 +90,7 @@ def apply_blstm(
 
 
 def blstm(
-    input_tensor: tf.Tensor, output_name: str = "output", params: Optional[Dict] = None
+    input_tensor: tf.Tensor, output_name: str = "output", params: Dict[str, Any] = {}
 ) -> tf.Tensor:
     """Model function applier."""
     return apply(apply_blstm, input_tensor, output_name, params)

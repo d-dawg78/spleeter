@@ -16,8 +16,8 @@ from typing import Dict, Optional, Union
 
 # pyright: reportMissingImports=false
 # pylint: disable=import-error
-import ffmpeg
-import numpy as np
+import ffmpeg  # type: ignore
+import numpy as np  # type: ignore
 
 from .. import SpleeterError
 from ..types import Signal
@@ -134,8 +134,8 @@ class FFMPEGProcessAudioAdapter(AudioAdapter):
         path: Union[Path, str],
         data: np.ndarray,
         sample_rate: float,
-        codec: Codec = None,
-        bitrate: str = None,
+        codec: Optional[Codec] = None,
+        bitrate: Optional[str] = None,
     ) -> None:
         """
         Write waveform data to the file denoted by the given path using
